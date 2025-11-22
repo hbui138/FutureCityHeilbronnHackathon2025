@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from ultralytics import YOLO
 from tracker import Tracker
+import json  # Import the JSON module
 
 def people_counting(area1,
                     area2,
@@ -30,19 +31,24 @@ def people_counting(area1,
     - True if inference was successful
     - False if an error occurred
     """
-
     if VIDEO_PATH is None or MODEL_PATH is None:
         print('No proper Paths provided')
         return False
 
-    # Default areas if not provided for test
+    if LOG_PATH is None:
+        LOG_PATH = VIDEO_PATH.split('.')[0] + ".json"
+
     if area1 is None:
-        area1 = [(0, 0), (1, 0), (0, 1), (1, 1)]  # Inside area
+        area1 = [(0, 0), (1, 0), (1, 1), (0, 1)]  # A 1x1 pixel square
     if area2 is None:
-        area2 = [(0, 0), (1, 0), (0, 1), (1, 1)]  # Outside area
+        area2 = [(0, 0), (1, 0), (1, 1), (0, 1)]  # A 1x1 pixel square
     if register_line_area is None:
-        register_line_area = [(0, 0), (1, 1)]  # Register line area
-    print(area1, area2)
+        register_line_area = [(0, 0), (1, 1)]  # A tiny rectangle
+
+    # Print areas for debugging
+    print(f"Inside area (area1): {area1}")
+    print(f"Outside area (area2): {area2}")
+    print(f"Register line area: {register_line_area}")
 
     # Load YOLO model
     model = YOLO(MODEL_PATH)
@@ -57,87 +63,74 @@ def people_counting(area1,
     # Open video capture
     cap = cv2.VideoCapture(VIDEO_PATH)
 
+    # Check if video is opened correctly
+    if not cap.isOpened():
+        print("Error opening video stream or file")
+        return False
+
     # Function to check if a bounding box is inside the defined rectangle
     def is_inside_rect(bbox, rect):
-        x1, y1, x2, y2 = bbox  # Bounding box coordinates (x1, y1, x2, y2)
-        rect_x1, rect_y1 = rect[0]  # Top-left corner of the rectangle
-        rect_x2, rect_y2 = rect[1]  # Bottom-right corner of the rectangle
-
-        # Check if the bounding box intersects or is inside the rectangle
+        x1, y1, x2, y2 = bbox
+        rect_x1, rect_y1 = rect[0]
+        rect_x2, rect_y2 = rect[1]
         return x1 >= rect_x1 and y1 >= rect_y1 and x2 <= rect_x2 and y2 <= rect_y2
 
     # Count frame number and customer queue
     count = 0
     customer_queue = []
 
-    log_file = None
-    if LOG_PATH:
-        log_file = open(LOG_PATH, "w")
+    # Initialize log list for JSON output
+    log_data = []
 
-    # Main loop to process video frames
     while cap.isOpened():
         ret, frame = cap.read()
 
         if not ret:
-            print("The video capture has ended || Any other error with the camera source")
-            return False
+            print("Error reading frame")
+            break
 
         count += 1
         if count % 2 != 0:
             continue
 
         # Resize frame
-        x, y = 393, 700
-        frame = cv2.resize(frame, (x, y))
+        frame = cv2.resize(frame, (393, 700))
 
         # Perform object detection with YOLO
         results = model.predict(frame, verbose=False)
 
         # Extract bounding boxes and associated class IDs
-        a = results[0].boxes.xyxy  # Use the 'xyxy' attribute for bounding boxes
+        a = results[0].boxes.xyxy
         px = pd.DataFrame(a).astype("float")
 
         detected_people = []
-
-        # Loop through the detections and filter for 'person' class
         for index, row in px.iterrows():
-            # Unpack only the bounding box coordinates
             x1, y1, x2, y2 = row
 
-            class_name = "person"  # Retrieve class name from coco.txt
+            class_name = "person"
 
             if 'person' in class_name:
                 detected_people.append([int(x1), int(y1), int(x2), int(y2)])
-
-                # Draw bounding boxes around detected people
                 cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
 
-        # Update tracker with bounding boxes
         bbox_id = tracker.update(detected_people)
 
-        # Initialize count for people inside the rectangle
         people_in_rect_count = 0
 
         for bbox in bbox_id:
             x3, y3, x4, y4, person_id = bbox
-
-            # Track position (xt, yt) of the person
             xt, yt = x4, y4
 
-            # People entering the inside area (area2 -> area1)
             if cv2.pointPolygonTest(np.array(area2, np.int32), (xt, yt), False) >= 0:
                 entering.add(person_id)
 
-            # People exiting (area1 -> area2)
             if person_id in entering:
                 if cv2.pointPolygonTest(np.array(area1, np.int32), (xt, yt), False) >= 0:
                     exiting.add(person_id)
 
-            # Count people inside the defined rectangle
             if is_inside_rect([x3, y3, x4, y4], register_line_area):
                 people_in_rect_count += 1
 
-        # Output: Number of people who entered, exited, and are still inside
         num_entered = len(entering)
         num_exited = len(exiting)
         num_inside = num_entered - num_exited
@@ -151,16 +144,16 @@ def people_counting(area1,
             customer_queue.append(people_in_rect_count)
             avg_queue_length = sum(customer_queue) / len(customer_queue)
 
-        # log/print counts every 10 frames
+        # Log data every 10 frames
         if count % 10 == 0:
-            log_message = (f"Frame: {count}\n"
-                           f"People Entered: {num_entered}\n"
-                           f"People Exited: {num_exited}\n"
-                           f"People Inside: {num_inside}\n"
-                           f"Estimated waiting time: {int(avg_queue_length * TIME_PER_CUSTOMER)} seconds\n\n")
-            print(log_message)  # Print to console
-            if log_file:
-                log_file.write(log_message)  # Write to log file
+            log_entry = {
+                "frame": count,
+                "people_entered": num_entered,
+                "people_exited": num_exited,
+                "people_inside": num_inside,
+                "estimated_waiting_time_seconds": int(avg_queue_length * TIME_PER_CUSTOMER)
+            }
+            log_data.append(log_entry)
 
         # Draw areas (polygons) for inside, outside, and register line
         cv2.polylines(frame, [np.array(area1, np.int32)], isClosed=True, color=(0, 255, 255), thickness=2)
@@ -173,6 +166,11 @@ def people_counting(area1,
         # Exit loop on 'q' key press
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+    # Write the log data to a JSON file after processing
+    if LOG_PATH:
+        with open(LOG_PATH, 'w') as log_file:
+            json.dump(log_data, log_file, indent=4)  # Write the logs as JSON with indentation
 
     # Release the capture and close all windows
     cap.release()
