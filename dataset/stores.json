@@ -1,0 +1,46 @@
+{
+  "stores": [
+    {
+      "store_id": "S001",
+      "store_name": "Kaufland",
+      "location": {
+        "address": "Neckargartacher Str. 111",
+        "city": "Heilbronn",
+        "state": "Baden-Württemberg",
+        "latitude": 49.15124,
+        "longitude": 9.19641
+      },
+      "opening_hours": {
+      "Monday": { "open": "07:00", "close": "22:00" },
+      "Tuesday": { "open": "07:00", "close": "22:00" },
+      "Wednesday": { "open": "07:00", "close": "22:00" },
+      "Thursday": { "open": "07:00", "close": "22:00" },
+      "Friday": { "open": "07:00", "close": "22:00" },
+      "Saturday": { "open": "07:00", "close": "22:00" },
+      "Sunday": { "open": null, "close": null }
+      },
+      "store_rating": 4.2
+    },
+    {
+      "store_id": "S002",
+      "store_name": "Lidl",
+      "location": {
+        "address": "Neckarsulmer Str. 24",
+        "city": "Heilbronn",
+        "state": "Baden-Württemberg",
+        "latitude": 49.15197,
+        "longitude": 9.22302
+      },
+      "opening_hours": {
+      "Monday": { "open": "07:00", "close": "22:00" },
+      "Tuesday": { "open": "07:00", "close": "22:00" },
+      "Wednesday": { "open": "07:00", "close": "22:00" },
+      "Thursday": { "open": "07:00", "close": "22:00" },
+      "Friday": { "open": "07:00", "close": "22:00" },
+      "Saturday": { "open": "07:00", "close": "22:00" },
+      "Sunday": { "open": null, "close": null }
+      },
+      "store_rating": 4.4
+    }
+  ]
+}
