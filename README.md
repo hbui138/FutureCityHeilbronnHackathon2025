@@ -1,9 +1,11 @@
 # FutureCityHeilbronnHackathon2025
 
+``` bash
 /data
   ├── stores.json
   ├── products.json
   └── store_products.json
+```
 
 ## 1️. `store.json` – Store Master Data
 
@@ -13,14 +15,14 @@ Contains details about stores, their location, opening hours, and rating.
 {
   "stores": [
     {
-      "store_id": string,
-      "store_name": string,
+      "store_id": "string",
+      "store_name": "string",
       "location": {
-        "address": string,
-        "city": string,
-        "state": string,
-        "latitude": float [-90, 90],
-        "longitude": float [-180, 180]
+        "address": "string",
+        "city": "string",
+        "state": "string",
+        "latitude": "float" [-90, 90],
+        "longitude": "float" [-180, 180]
       },
       "opening_hours": {
         "Monday": { "open": "HH:MM", "close": "HH:MM" },
@@ -31,7 +33,7 @@ Contains details about stores, their location, opening hours, and rating.
         "Saturday": { "open": "HH:MM", "close": "HH:MM" },
         "Sunday": { "open": "HH:MM", "close": "HH:MM" }
       },
-      "store_rating": float [0, 5]
+      "store_rating": "float" [0, 5]
     }
   ]
 }
@@ -56,15 +58,15 @@ Contains information about products, their brand, category, packaging.
 {
   "products": [
     {
-      "product_id": string,
-      "product_name": string,
-      "brand": string,
-      "category": string,
-      "subcategory": string,
+      "product_id": "string",
+      "product_name": "string",
+      "brand": "string",
+      "category": "string",
+      "subcategory": "string",
       "package": {
-        "weight": float,
-        "weight_unit": string,
-        "package_type": string
+        "weight": "float",
+        "weight_unit": "string",
+        "package_type": "string"
       },
     }
   ]
@@ -90,17 +92,17 @@ Contains store-specific inventory, pricing.
 {
   "store_products": [
     {
-      "store_id": string,
-      "product_id": string,
+      "store_id": "string",
+      "product_id": "string",
       "pricing": {
-        "normal_price": float,
-        "real_price": float (= "normal_price" x (1 - "discount_percentage"),
-        "discount_percentage": float [0, 100]
+        "normal_price": "float",
+        "real_price": "float" (= "normal_price" x (1 - "discount_percentage"),
+        "discount_percentage": "float" [0, 100]
       },
       "stock_info": {
-        "stock": int (>= 0),
-        "availability_status": int [0, 5],
-        "restock_date": datetime
+        "stock": "int" (>= 0),
+        "availability_status": "int" [0, 5],
+        "restock_date": "datetime"
       },
     }
   ]
